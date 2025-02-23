@@ -1,74 +1,113 @@
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Ionicons } from '@expo/vector-icons';
+import CameraComponent from '@/components/CameraComponent';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = await AsyncStorage.getItem("token");
-      console.log("Stored Token:", token); // Debugging
-      if (!token) {
-        router.replace("/auth/Login"); // Redirect to login if no token
-      } else {
-        setIsAuthenticated(true);
-      }
-      setIsLoading(false);
-    };
-
     checkAuth();
   }, []);
 
-  if (isLoading) return null; // Prevents rendering before checking auth
+  const checkAuth = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      setIsAuthenticated(!!token);
+      if (!token) {
+        router.replace("/auth/Login");
+      }
+    } catch (error) {
+      router.replace("/auth/Login");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) return null;
 
   return isAuthenticated ? (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            position: 'absolute',
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#FFFFFF',
+            height: 80,
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+            paddingBottom: 15,
+            paddingTop: 5,
           },
-          default: {},
-        }),
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarActiveTintColor: '#0047AB',
+          tabBarInactiveTintColor: '#8E8E93',
+          tabBarLabelStyle: {
+            fontSize: 12,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="History"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="Profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: '',
+            tabBarButton: (props) => (
+              <TouchableOpacity
+                style={{
+                  top: -30,  // Adjust this to move the button slightly higher or lower
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: '#0047AB',  // Blue background color
+                  width: 90,
+                  height: 90,
+                  borderRadius: 45,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 5,
+                  elevation: 5,
+                }}
+                onPress={() => setShowCamera(true)}
+              >
+                <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>Scan</Text>
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="history" // change the name to the history page
+          options={{
+            title: 'History',
+            tabBarIcon: ({ color }) => <Ionicons name="folder-outline" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
+          }}
+        />
+      </Tabs>
+      {showCamera && (
+        <CameraComponent
+          isVisible={showCamera}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+    </>
   ) : null;
 }
